@@ -1,0 +1,105 @@
+name: Build Windows Executable
+
+on:
+  # 手動觸發
+  workflow_dispatch:
+
+  # 推送 tag 時觸發（例如 v1.0.0）
+  push:
+    tags:
+      - 'v*'
+
+  # 推送到 main 分支時觸發（可選）
+  # push:
+  #   branches:
+  #     - main
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build executable
+      run: |
+        python build.py
+
+    - name: Get version
+      id: version
+      shell: bash
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION="dev-$(git rev-parse --short HEAD)"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+
+    - name: Prepare distribution package
+      shell: bash
+      run: |
+        mkdir -p release
+        cp dist/ModelArkVideoGenerator.exe release/
+        cp config.txt.example release/
+        cp README_DIST.md release/README.md
+
+        # 創建壓縮包
+        cd release
+        7z a ../ModelArkVideoGenerator-${{ steps.version.outputs.version }}-win64.zip *
+        cd ..
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ModelArkVideoGenerator-${{ steps.version.outputs.version }}-win64
+        path: release/
+        retention-days: 90
+
+    - name: Upload release package
+      uses: actions/upload-artifact@v4
+      with:
+        name: ModelArkVideoGenerator-${{ steps.version.outputs.version }}-win64-zip
+        path: ModelArkVideoGenerator-${{ steps.version.outputs.version }}-win64.zip
+        retention-days: 90
+
+    # 如果是 tag，創建 GitHub Release
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ModelArkVideoGenerator-${{ steps.version.outputs.version }}-win64.zip
+        body: |
+          ## ModelArk Video Generator ${{ steps.version.outputs.version }}
+
+          ### 使用方法
+          1. 下載並解壓縮 `ModelArkVideoGenerator-${{ steps.version.outputs.version }}-win64.zip`
+          2. 複製 `config.txt.example` 為 `config.txt`
+          3. 在 `config.txt` 中填入：
+             - 第一行：BytePlus API Key
+             - 第二行：視頻生成端點 ID (ep-xxxxx)
+          4. 雙擊 `ModelArkVideoGenerator.exe` 啟動
+          5. 瀏覽器會自動打開 http://127.0.0.1:5001
+
+          ### 系統要求
+          - Windows 10/11 64-bit
+          - 無需安裝 Python 或其他依賴
+
+          ### 詳細說明
+          請查看壓縮包內的 README.md
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
