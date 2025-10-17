@@ -9,6 +9,10 @@ httpcore>=0.15.0
 h11>=0.13.0
 anyio>=3.0.0
 
+# 數據驗證
+pydantic>=1.10.0
+typing-extensions>=4.2.0
+
 # BytePlus SDK
 byteplus-python-sdk-v2==3.0.14
 

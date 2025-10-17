@@ -63,6 +63,9 @@ def build():
         'byteplussdkarkruntime',
         'byteplussdkarkruntime.resources',
         'byteplussdkarkruntime._client',
+        'byteplussdkarkruntime._compat',
+        'byteplussdkcore',
+        'byteplussdkcore.rest',
         'httpx',
         'httpx._client',
         'httpx._config',
@@ -72,6 +75,10 @@ def build():
         'h11',
         'anyio',
         'sniffio',
+        'pydantic',
+        'pydantic.fields',
+        'pydantic_core',
+        'typing_extensions',
         'sqlalchemy.sql.default_comparator',
         'sqlalchemy.ext.declarative',
         'werkzeug.security',
@@ -86,6 +93,9 @@ def build():
         'apscheduler.jobstores.memory',
         'threading',
         'webbrowser',
+        'uuid',
+        'hashlib',
+        'base64',
     ]
 
     for imp in hidden_imports:

@@ -5,26 +5,70 @@
 import logging
 import os
 import sys
+import uuid
 from pathlib import Path
 from cryptography.fernet import Fernet
 from app.models import Settings
 
 
-# 生成或載入加密密鑰
-KEY_FILE = Path('config/.key')
+def get_key_file_path():
+    """
+    獲取加密密鑰文件路徑
+
+    Returns:
+        Path: 加密密鑰文件路徑
+    """
+    if getattr(sys, 'frozen', False):
+        # 打包後的 exe：放在 exe 同目錄
+        return Path(sys.executable).parent / '.encryption_key'
+    else:
+        # 開發環境：放在 config 目錄
+        return Path('config/.key')
 
 
 def get_encryption_key():
-    """獲取或生成加密密鑰"""
-    if KEY_FILE.exists():
-        with open(KEY_FILE, 'rb') as f:
-            return f.read()
-    else:
+    """
+    獲取或生成加密密鑰
+
+    如果無法寫入文件，使用基於機器 UUID 的固定密鑰
+
+    Returns:
+        bytes: 加密密鑰
+    """
+    key_file = get_key_file_path()
+
+    # 嘗試從文件讀取
+    try:
+        if key_file.exists():
+            with open(key_file, 'rb') as f:
+                return f.read()
+    except Exception as e:
+        logging.warning(f"讀取密鑰文件失敗: {str(e)}")
+
+    # 嘗試創建新密鑰並保存
+    try:
         key = Fernet.generate_key()
-        KEY_FILE.parent.mkdir(exist_ok=True)
-        with open(KEY_FILE, 'wb') as f:
+        key_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(key_file, 'wb') as f:
             f.write(key)
+        logging.info(f"已生成新的加密密鑰: {key_file}")
         return key
+    except Exception as e:
+        # 無法寫入文件，使用基於機器 UUID 的固定密鑰
+        logging.warning(f"無法寫入密鑰文件: {str(e)}")
+        logging.warning("使用基於機器的固定密鑰")
+
+        # 使用機器 UUID 生成固定密鑰
+        try:
+            machine_id = str(uuid.getnode()).encode()
+        except:
+            machine_id = b'default-machine-id'
+
+        # 生成32字節的密鑰並轉為 base64（Fernet 要求）
+        import base64
+        import hashlib
+        key_bytes = hashlib.sha256(machine_id).digest()
+        return base64.urlsafe_b64encode(key_bytes)
 
 
 # 初始化 Fernet 加密器
@@ -181,21 +225,31 @@ def setup_logging(log_file='logs/app.log', log_level='INFO'):
     配置日誌系統
 
     Args:
-        log_file: 日誌文件路徑
+        log_file: 日誌文件路徑（相對於工作目錄）
         log_level: 日誌級別
     """
-    # 確保日誌目錄存在
-    log_path = Path(log_file)
-    log_path.parent.mkdir(exist_ok=True)
+    # 獲取正確的工作目錄
+    if getattr(sys, 'frozen', False):
+        # 打包後：exe 同目錄
+        work_dir = Path(sys.executable).parent
+    else:
+        # 開發環境：當前目錄
+        work_dir = Path.cwd()
 
     # 配置日誌格式
     log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
     # 設置日誌處理器
-    handlers = [
-        logging.FileHandler(log_file, encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+    handlers = [logging.StreamHandler()]
+
+    # 嘗試添加文件處理器
+    try:
+        log_path = work_dir / log_file
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(log_path, encoding='utf-8'))
+    except Exception as e:
+        # 無法創建日誌文件，只輸出到控制台
+        print(f"Warning: Cannot create log file: {e}")
 
     # 配置 logging
     logging.basicConfig(
@@ -213,18 +267,36 @@ def setup_logging(log_file='logs/app.log', log_level='INFO'):
 
 def ensure_directories():
     """確保所有必要的目錄都存在"""
-    directories = [
-        'data',
-        'static/videos',
-        'static/css',
-        'static/js',
-        'static/assets',
-        'logs',
-        'config',
-        'templates'
-    ]
+    # 獲取正確的工作目錄
+    if getattr(sys, 'frozen', False):
+        # 打包後：exe 同目錄
+        work_dir = Path(sys.executable).parent
+    else:
+        # 開發環境：當前目錄
+        work_dir = Path.cwd()
+
+    # 打包後只需要創建數據和日誌目錄（static/templates 已打包在 exe 中）
+    if getattr(sys, 'frozen', False):
+        directories = [
+            'data',
+            'logs',
+        ]
+    else:
+        directories = [
+            'data',
+            'static/videos',
+            'static/css',
+            'static/js',
+            'static/assets',
+            'logs',
+            'config',
+            'templates'
+        ]
 
     for directory in directories:
-        Path(directory).mkdir(parents=True, exist_ok=True)
+        try:
+            (work_dir / directory).mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logging.warning(f"無法創建目錄 {directory}: {str(e)}")
 
     logging.info("目錄結構已確保完整")
