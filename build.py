@@ -60,8 +60,8 @@ def build():
         'app.routes',
         'app.task_manager',
         'app.utils',
-        'byteplus',
         'byteplussdkarkruntime',
+        'byteplussdkarkruntime.resources',
         'sqlalchemy.sql.default_comparator',
         'sqlalchemy.ext.declarative',
         'werkzeug.security',
@@ -189,19 +189,13 @@ def check_dependencies():
             safe_print(f"[ERROR] {package} not installed")
             return False
 
-    # Check BytePlus SDK with alternative names
-    byteplus_found = False
-    for package_name in ['byteplus', 'byteplussdkarkruntime']:
-        try:
-            __import__(package_name)
-            safe_print(f"[OK] BytePlus SDK ({package_name})")
-            byteplus_found = True
-            break
-        except ImportError:
-            continue
-
-    if not byteplus_found:
+    # Check BytePlus SDK (package: byteplus-python-sdk-v2, module: byteplussdkarkruntime)
+    try:
+        import byteplussdkarkruntime
+        safe_print("[OK] BytePlus SDK (byteplussdkarkruntime)")
+    except ImportError:
         safe_print("[ERROR] BytePlus SDK not installed")
+        safe_print("   Package name: byteplus-python-sdk-v2")
         return False
 
     safe_print("\nAll dependencies are ready\n")
