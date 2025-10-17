@@ -6,7 +6,7 @@ Werkzeug==3.0.1
 requests==2.31.0
 
 # BytePlus SDK
-byteplussdkarkruntime
+byteplus-python-sdk-v2==3.0.14
 
 # 數據庫
 SQLAlchemy==2.0.23
