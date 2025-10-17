@@ -5,6 +5,9 @@ Werkzeug==3.0.1
 # HTTP 請求
 requests==2.31.0
 httpx>=0.23.0
+httpcore>=0.15.0
+h11>=0.13.0
+anyio>=3.0.0
 
 # BytePlus SDK
 byteplus-python-sdk-v2==3.0.14
