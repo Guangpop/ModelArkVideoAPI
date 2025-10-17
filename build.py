@@ -1,11 +1,12 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
-PyInstaller 打包腳本
+PyInstaller Build Script
 
-使用方法:
+Usage:
     python build.py
 
-輸出位置:
+Output:
     - Windows: dist/ModelArkVideoGenerator.exe
     - macOS: dist/ModelArkVideoGenerator.app
     - Linux: dist/ModelArkVideoGenerator
@@ -16,13 +17,22 @@ import sys
 import os
 import platform
 
+# Fix Windows console encoding issues
+def safe_print(text):
+    """Safe print that handles encoding issues on Windows"""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        # Fallback to ASCII-safe output
+        print(text.encode('ascii', 'replace').decode('ascii'))
+
 
 def build():
-    """執行打包"""
+    """Build executable with PyInstaller"""
 
-    print("\n" + "=" * 60)
-    print("🚀 開始打包 ModelArk Video Generator")
-    print("=" * 60 + "\n")
+    safe_print("\n" + "=" * 60)
+    safe_print("Building ModelArk Video Generator...")
+    safe_print("=" * 60 + "\n")
 
     # 基本配置
     args = [
@@ -42,7 +52,7 @@ def build():
         f'--add-data=README_DIST.md{separator}.',
     ])
 
-    # 隱藏導入（避免 PyInstaller 遺漏）
+    # Hidden imports (avoid PyInstaller missing modules)
     hidden_imports = [
         'app',
         'app.api_client',
@@ -50,8 +60,8 @@ def build():
         'app.routes',
         'app.task_manager',
         'app.utils',
+        'byteplus',
         'byteplussdkarkruntime',
-        'byteplussdkarkruntime.resources',
         'sqlalchemy.sql.default_comparator',
         'sqlalchemy.ext.declarative',
         'werkzeug.security',
@@ -85,34 +95,34 @@ def build():
     for mod in exclude_modules:
         args.append(f'--exclude-module={mod}')
 
-    # 平台特定配置
+    # Platform-specific configuration
     if sys.platform == 'darwin':  # macOS
-        print("📦 打包平台: macOS")
+        safe_print("Platform: macOS")
         args.extend([
-            '--windowed',  # GUI 模式（不顯示終端）
-            # '--icon=static/assets/icon.icns',  # 需要先創建圖標文件
+            '--windowed',  # GUI mode (no terminal)
+            # '--icon=static/assets/icon.icns',
         ])
     elif sys.platform == 'win32':  # Windows
-        print("📦 打包平台: Windows")
+        safe_print("Platform: Windows")
         args.extend([
-            '--windowed',  # GUI 模式（不顯示 cmd）
-            # '--icon=static/assets/icon.ico',  # 需要先創建圖標文件
+            '--windowed',  # GUI mode (no cmd window)
+            # '--icon=static/assets/icon.ico',
         ])
     elif sys.platform.startswith('linux'):  # Linux
-        print("📦 打包平台: Linux")
-        # Linux 不使用 --windowed，保持終端輸出
+        safe_print("Platform: Linux")
+        # Keep terminal output for Linux
 
-    # 執行打包
-    print("\n正在打包，請稍候...\n")
+    # Execute build
+    safe_print("\nBuilding executable, please wait...\n")
 
     try:
         PyInstaller.__main__.run(args)
 
-        print("\n" + "=" * 60)
-        print("✅ 打包完成！")
-        print("=" * 60)
+        safe_print("\n" + "=" * 60)
+        safe_print("Build completed successfully!")
+        safe_print("=" * 60)
 
-        # 輸出結果位置
+        # Output location
         dist_dir = os.path.join(os.getcwd(), 'dist')
         if sys.platform == 'win32':
             exe_path = os.path.join(dist_dir, 'ModelArkVideoGenerator.exe')
@@ -121,78 +131,92 @@ def build():
         else:
             exe_path = os.path.join(dist_dir, 'ModelArkVideoGenerator')
 
-        print(f"\n📦 執行檔位置:")
-        print(f"   {exe_path}")
+        safe_print(f"\nExecutable location:")
+        safe_print(f"   {exe_path}")
 
         if os.path.exists(exe_path):
             size_mb = os.path.getsize(exe_path if not exe_path.endswith('.app') else exe_path.replace('.app', '')) / (1024 * 1024)
-            print(f"\n📏 檔案大小: {size_mb:.1f} MB")
+            safe_print(f"\nFile size: {size_mb:.1f} MB")
 
-        print("\n💡 使用提示:")
-        print("   1. 在執行檔所在目錄創建 config.txt 文件")
-        print("      - 第一行：BytePlus API Key")
-        print("      - 第二行：視頻生成端點 ID（ep-xxxxx）")
-        print("   2. 雙擊執行檔即可運行")
-        print("   3. 應用會自動在瀏覽器打開 http://127.0.0.1:5001")
-        print("   4. 詳細說明請查看 README_DIST.md")
-        print("\n📦 建議打包內容:")
-        print("   - ModelArkVideoGenerator.exe")
-        print("   - config.txt.example")
-        print("   - README_DIST.md")
-        print("\n" + "=" * 60 + "\n")
+        safe_print("\nUsage instructions:")
+        safe_print("   1. Create config.txt file in the same directory")
+        safe_print("      - Line 1: BytePlus API Key")
+        safe_print("      - Line 2: Video generation endpoint ID (ep-xxxxx)")
+        safe_print("   2. Double-click the executable to run")
+        safe_print("   3. Application will open in browser at http://127.0.0.1:5001")
+        safe_print("   4. See README_DIST.md for details")
+        safe_print("\nDistribution package should include:")
+        safe_print("   - ModelArkVideoGenerator.exe")
+        safe_print("   - config.txt.example")
+        safe_print("   - README_DIST.md")
+        safe_print("\n" + "=" * 60 + "\n")
 
     except Exception as e:
-        print("\n" + "=" * 60)
-        print("❌ 打包失敗！")
-        print("=" * 60)
-        print(f"\n錯誤信息: {str(e)}\n")
+        safe_print("\n" + "=" * 60)
+        safe_print("Build failed!")
+        safe_print("=" * 60)
+        safe_print(f"\nError: {str(e)}\n")
         sys.exit(1)
 
 
 def check_dependencies():
-    """檢查打包依賴"""
-    print("🔍 檢查打包環境...\n")
+    """Check build dependencies"""
+    safe_print("Checking build environment...\n")
 
-    # 檢查 PyInstaller
+    # Check PyInstaller
     try:
         import PyInstaller
-        print(f"✓ PyInstaller 版本: {PyInstaller.__version__}")
+        safe_print(f"[OK] PyInstaller version: {PyInstaller.__version__}")
     except ImportError:
-        print("❌ 未安裝 PyInstaller")
-        print("   請運行: pip install pyinstaller")
+        safe_print("[ERROR] PyInstaller not installed")
+        safe_print("   Please run: pip install pyinstaller")
         return False
 
-    # 檢查其他依賴
+    # Check other dependencies
     required_packages = [
         'flask',
         'requests',
         'sqlalchemy',
         'apscheduler',
         'cryptography',
-        'byteplussdkarkruntime'
     ]
 
     for package in required_packages:
         try:
             __import__(package)
-            print(f"✓ {package}")
+            safe_print(f"[OK] {package}")
         except ImportError:
-            print(f"❌ 未安裝 {package}")
+            safe_print(f"[ERROR] {package} not installed")
             return False
 
-    print("\n✅ 所有依賴已就緒\n")
+    # Check BytePlus SDK with alternative names
+    byteplus_found = False
+    for package_name in ['byteplus', 'byteplussdkarkruntime']:
+        try:
+            __import__(package_name)
+            safe_print(f"[OK] BytePlus SDK ({package_name})")
+            byteplus_found = True
+            break
+        except ImportError:
+            continue
+
+    if not byteplus_found:
+        safe_print("[ERROR] BytePlus SDK not installed")
+        return False
+
+    safe_print("\nAll dependencies are ready\n")
     return True
 
 
 if __name__ == '__main__':
-    print("\n" + "=" * 60)
-    print("ModelArk Video Generator - 打包工具")
-    print("=" * 60 + "\n")
+    safe_print("\n" + "=" * 60)
+    safe_print("ModelArk Video Generator - Build Tool")
+    safe_print("=" * 60 + "\n")
 
-    # 檢查依賴
+    # Check dependencies
     if not check_dependencies():
-        print("\n請先安裝所有依賴: pip install -r requirements.txt\n")
+        safe_print("\nPlease install all dependencies: pip install -r requirements.txt\n")
         sys.exit(1)
 
-    # 執行打包
+    # Execute build
     build()
