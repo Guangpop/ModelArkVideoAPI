@@ -85,17 +85,12 @@ def build():
         'flask',
         'flask.json',
         'requests',
-        'cryptography',
-        'cryptography.fernet',
         'apscheduler.schedulers.background',
         'apscheduler.triggers.interval',
         'apscheduler.executors.pool',
         'apscheduler.jobstores.memory',
         'threading',
         'webbrowser',
-        'uuid',
-        'hashlib',
-        'base64',
     ]
 
     for imp in hidden_imports:
@@ -198,7 +193,6 @@ def check_dependencies():
         'requests',
         'sqlalchemy',
         'apscheduler',
-        'cryptography',
     ]
 
     for package in required_packages:

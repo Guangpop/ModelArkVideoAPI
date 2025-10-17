@@ -3,8 +3,8 @@ Flask REST API 路由
 """
 
 from flask import Blueprint, request, jsonify, send_file
-from app.models import Task, Settings
-from app.utils import save_api_key, get_api_key
+from app.models import Task
+from app.utils import get_api_key
 from datetime import datetime
 import logging
 import os
@@ -209,31 +209,12 @@ def create_api_blueprint(app_context):
 
     @api_bp.route('/settings', methods=['POST'])
     def update_settings():
-        """更新設置"""
-        try:
-            db_session = get_db_session()
-            data = request.json
-
-            if 'api_key' in data:
-                success = save_api_key(db_session, data['api_key'])
-                if success:
-                    logging.info("API Key 已更新")
-                    # 重新初始化 API 客戶端
-                    if hasattr(app_context, 'init_api_client'):
-                        init_success = app_context.init_api_client()
-                        if init_success:
-                            return jsonify({'message': 'API Key 已保存並生效'})
-                        else:
-                            return jsonify({'message': 'API Key 已保存，但初始化失敗，請檢查 API Key 是否有效'})
-                    return jsonify({'message': 'API Key 已保存'})
-                else:
-                    return jsonify({'error': '保存 API Key 失敗'}), 500
-
-            return jsonify({'error': '沒有要更新的設置'}), 400
-
-        except Exception as e:
-            logging.error(f"更新設置失敗: {str(e)}")
-            return jsonify({'error': str(e)}), 500
+        """更新設置（已廢棄）"""
+        # API Key 現在直接從 config.txt 讀取，不支持通過 API 更新
+        return jsonify({
+            'error': '無法通過 API 更新設置',
+            'message': '請直接編輯 exe 同目錄下的 config.txt 文件，然後重啟應用'
+        }), 400
 
     @api_bp.route('/status', methods=['GET'])
     def get_status():

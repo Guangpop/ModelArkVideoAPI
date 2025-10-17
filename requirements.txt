@@ -22,9 +22,6 @@ SQLAlchemy==2.0.23
 # 任務調度
 APScheduler==3.10.4
 
-# 加密
-cryptography==41.0.7
-
 # 打包工具
 PyInstaller==6.3.0
 
