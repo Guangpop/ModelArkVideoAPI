@@ -1,0 +1,24 @@
+# Web 框架
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# HTTP 請求
+requests==2.31.0
+
+# BytePlus SDK
+byteplussdkarkruntime
+
+# 數據庫
+SQLAlchemy==2.0.23
+
+# 任務調度
+APScheduler==3.10.4
+
+# 加密
+cryptography==41.0.7
+
+# 打包工具
+PyInstaller==6.3.0
+
+# 實用工具
+python-dotenv==1.0.0

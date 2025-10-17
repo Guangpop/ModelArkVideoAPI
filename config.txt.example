@@ -1,0 +1,27 @@
+# BytePlus ModelArk 配置文件
+#
+# 使用方法：
+# 1. 將此文件重命名為 config.txt
+# 2. 刪除所有說明文字和 # 符號
+# 3. 在第一行填入您的 BytePlus API Key
+# 4. 在第二行填入您的 Model/Endpoint ID
+# 5. 保存文件
+#
+# 格式（僅兩行，無空格）：
+# your-api-key-here
+# ep-xxxxx
+#
+# 獲取方法：
+# - API Key: https://console.byteplus.com/modelark
+# - Endpoint ID: 在 ModelArk 控制台的 Online Inference 中創建視頻生成端點
+#
+# 注意：
+# - 必須是兩行，第一行 API Key，第二行 Endpoint ID
+# - 不要有多餘的空格或換行
+# - 不要分享此文件給他人
+# - config.txt 已被加入 .gitignore，不會被提交到 Git
+#
+# 範例：
+
+your-api-key-here
+ep-xxxxx
