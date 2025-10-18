@@ -34,8 +34,14 @@ You can copy `config.txt.example` as a template.
 ### 3. Running the Application
 
 - **Windows:** Double-click `ModelArkVideoGenerator.exe`
+- A console window will appear showing the application logs
 - The application will automatically open in your browser at `http://127.0.0.1:5001`
 - If the browser doesn't open automatically, manually visit the URL
+
+**To close the application:**
+- Go to the console window
+- Press `Ctrl+C` to shutdown the server
+- **Note:** Simply closing the browser window will NOT stop the application
 
 ### 4. Using the Application
 

@@ -119,10 +119,11 @@ def build():
         ])
     elif sys.platform == 'win32':  # Windows
         safe_print("Platform: Windows")
-        args.extend([
-            '--windowed',  # GUI mode (no cmd window)
-            # '--icon=static/assets/icon.ico',
-        ])
+        # Do NOT use --windowed to allow console window for Ctrl+C shutdown
+        # args.extend([
+        #     '--windowed',  # GUI mode (no cmd window)
+        #     # '--icon=static/assets/icon.ico',
+        # ])
     elif sys.platform.startswith('linux'):  # Linux
         safe_print("Platform: Linux")
         # Keep terminal output for Linux
