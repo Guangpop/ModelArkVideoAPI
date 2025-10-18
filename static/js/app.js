@@ -13,6 +13,8 @@ createApp({
                 seed: null,
                 camera_fixed: false
             },
+            imageInputMode: 'url', // 'url' or 'upload'
+            uploadedImagePreview: null,
             showSettings: false,
             apiKey: '',
             apiKeyConfigured: false,
@@ -34,6 +36,16 @@ createApp({
             clearInterval(this.polling);
         }
     },
+    watch: {
+        imageInputMode(newMode) {
+            // Clear image data when switching modes
+            this.newTask.image_url = '';
+            this.uploadedImagePreview = null;
+            if (this.$refs.imageUpload) {
+                this.$refs.imageUpload.value = '';
+            }
+        }
+    },
     methods: {
         async loadTasks() {
             try {
@@ -43,6 +55,93 @@ createApp({
                 console.error('載入任務失敗:', error);
                 this.showError('載入任務失敗: ' + (error.response?.data?.error || error.message));
             }
+        },
+
+        async handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                this.newTask.image_url = '';
+                this.uploadedImagePreview = null;
+                return;
+            }
+
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                this.showError('不支持的圖片格式。請使用 JPEG, PNG, WebP, BMP, TIFF 或 GIF');
+                event.target.value = '';
+                return;
+            }
+
+            // Validate file size (max 30MB)
+            const maxSize = 30 * 1024 * 1024; // 30MB
+            if (file.size > maxSize) {
+                this.showError('圖片文件過大。最大支持 30MB');
+                event.target.value = '';
+                return;
+            }
+
+            try {
+                // Read image to validate dimensions
+                const image = await this.loadImage(file);
+
+                const width = image.width;
+                const height = image.height;
+                const aspectRatio = width / height;
+                const shorterSide = Math.min(width, height);
+                const longerSide = Math.max(width, height);
+
+                // Validate aspect ratio (0.4 to 2.5)
+                if (aspectRatio < 0.4 || aspectRatio > 2.5) {
+                    this.showError(`圖片寬高比不符合要求（${aspectRatio.toFixed(2)}）。需要在 0.4 到 2.5 之間`);
+                    event.target.value = '';
+                    return;
+                }
+
+                // Validate dimensions
+                if (shorterSide <= 300) {
+                    this.showError(`圖片短邊過小（${shorterSide}px）。需要大於 300px`);
+                    event.target.value = '';
+                    return;
+                }
+
+                if (longerSide >= 6000) {
+                    this.showError(`圖片長邊過大（${longerSide}px）。需要小於 6000px`);
+                    event.target.value = '';
+                    return;
+                }
+
+                // Convert to Base64
+                const base64 = await this.fileToBase64(file);
+
+                // Set image URL in Base64 format
+                this.newTask.image_url = base64;
+                this.uploadedImagePreview = base64;
+
+                this.showSuccess('圖片上傳成功');
+            } catch (error) {
+                console.error('處理圖片失敗:', error);
+                this.showError('處理圖片失敗: ' + error.message);
+                event.target.value = '';
+            }
+        },
+
+        loadImage(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = URL.createObjectURL(file);
+            });
+        },
+
+        fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
         },
 
         buildParameterString() {
@@ -118,6 +217,13 @@ createApp({
                 this.newTask.resolution = '720p';
                 this.newTask.seed = null;
                 this.newTask.camera_fixed = false;
+                this.uploadedImagePreview = null;
+                this.imageInputMode = 'url';
+
+                // Clear file input if exists
+                if (this.$refs.imageUpload) {
+                    this.$refs.imageUpload.value = '';
+                }
 
                 // 立即刷新任務列表
                 await this.loadTasks();
