@@ -42,6 +42,7 @@ config.txt
 static/videos/*.mp4
 static/videos/*.mov
 static/videos/*.avi
+videos/
 
 # PyInstaller
 *.spec
