@@ -75,21 +75,20 @@ class BytePlusAPIClient:
             # 構建 content 數組（按照官方 API 格式）
             content = []
 
-            # 如果提供了圖片 URL，添加圖片內容（image-to-video）
-            #if kwargs.get('image_url'):
-            #    content.append({
-            #        "type": "image_url",
-            #        "image_url": {
-            #            "url": kwargs['image_url']
-            #        }
-            #    })
-
             # 添加文本提示（text-to-video 或 image-to-video 的描述）
-            # 使用純文本，不添加參數後綴
             content.append({
                 "type": "text",
                 "text": prompt
             })
+
+            # 如果提供了圖片 URL，添加圖片內容（image-to-video）
+            if kwargs.get('image_url'):
+                content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": kwargs['image_url']
+                    }
+                })
 
             # 獲取模型/端點 ID（從配置文件讀取）
             model = kwargs.get("model") or get_model_id()

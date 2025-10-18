@@ -6,6 +6,7 @@ createApp({
             tasks: [],
             newTask: {
                 prompt: '',
+                image_url: '',
                 ratio: '16:9',
                 duration: 5,
                 resolution: '720p',
@@ -96,13 +97,22 @@ createApp({
                 const paramString = this.buildParameterString();
                 const fullPrompt = `${this.newTask.prompt.trim()} ${paramString}`;
 
-                // Send only the prompt (with parameters embedded)
-                const response = await axios.post('/api/tasks', {
+                // Prepare request data
+                const requestData = {
                     prompt: fullPrompt
-                });
+                };
+
+                // Add image_url if provided
+                if (this.newTask.image_url && this.newTask.image_url.trim()) {
+                    requestData.image_url = this.newTask.image_url.trim();
+                }
+
+                // Send request
+                const response = await axios.post('/api/tasks', requestData);
 
                 // 清空表單
                 this.newTask.prompt = '';
+                this.newTask.image_url = '';
                 this.newTask.ratio = '16:9';
                 this.newTask.duration = 5;
                 this.newTask.resolution = '720p';
