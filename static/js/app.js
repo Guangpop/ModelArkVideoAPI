@@ -6,10 +6,11 @@ createApp({
             tasks: [],
             newTask: {
                 prompt: '',
+                ratio: '16:9',
                 duration: 5,
-                aspect_ratio: '16:9',
-                fps: 24,
-                quality: 'high'
+                resolution: '720p',
+                seed: null,
+                camera_fixed: false
             },
             showSettings: false,
             apiKey: '',
@@ -43,6 +44,39 @@ createApp({
             }
         },
 
+        buildParameterString() {
+            // Build parameter string according to BytePlus API format
+            const params = [];
+
+            // --rt (ratio)
+            if (this.newTask.ratio) {
+                params.push(`--rt ${this.newTask.ratio}`);
+            }
+
+            // --dur (duration in seconds)
+            if (this.newTask.duration) {
+                params.push(`--dur ${this.newTask.duration}`);
+            }
+
+            // --fps (always 24 for BytePlus)
+            params.push('--fps 24');
+
+            // --rs (resolution)
+            if (this.newTask.resolution) {
+                params.push(`--rs ${this.newTask.resolution}`);
+            }
+
+            // --seed (optional)
+            if (this.newTask.seed !== null && this.newTask.seed !== '') {
+                params.push(`--seed ${this.newTask.seed}`);
+            }
+
+            // --cf (camera fixed)
+            params.push(`--cf ${this.newTask.camera_fixed ? 'true' : 'false'}`);
+
+            return params.join(' ');
+        },
+
         async createTask() {
             if (!this.newTask.prompt.trim()) {
                 this.showError('請輸入提示詞');
@@ -58,14 +92,22 @@ createApp({
             this.isCreating = true;
 
             try {
-                const response = await axios.post('/api/tasks', this.newTask);
+                // Build parameter string and append to prompt
+                const paramString = this.buildParameterString();
+                const fullPrompt = `${this.newTask.prompt.trim()} ${paramString}`;
+
+                // Send only the prompt (with parameters embedded)
+                const response = await axios.post('/api/tasks', {
+                    prompt: fullPrompt
+                });
 
                 // 清空表單
                 this.newTask.prompt = '';
+                this.newTask.ratio = '16:9';
                 this.newTask.duration = 5;
-                this.newTask.aspect_ratio = '16:9';
-                this.newTask.fps = 24;
-                this.newTask.quality = 'high';
+                this.newTask.resolution = '720p';
+                this.newTask.seed = null;
+                this.newTask.camera_fixed = false;
 
                 // 立即刷新任務列表
                 await this.loadTasks();
