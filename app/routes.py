@@ -76,7 +76,7 @@ def create_api_blueprint(app_context):
             # 調用 BytePlus API 創建任務
             result = api_client.create_task(
                 prompt=data['prompt'],
-                image_url=data.get('image_url'),
+                images=data.get('images'),  # List of {url, role}
                 model=data.get('model'),
                 duration=data.get('duration'),
                 aspect_ratio=data.get('aspect_ratio'),

@@ -6,15 +6,19 @@ createApp({
             tasks: [],
             newTask: {
                 prompt: '',
-                image_url: '',
+                imageMode: 'none',
+                images: [null, null],
+                referenceImages: [{ url: null }],
                 ratio: '16:9',
                 duration: 5,
                 resolution: '720p',
                 seed: null,
                 camera_fixed: false
             },
-            imageInputMode: 'url', // 'url' or 'upload'
-            uploadedImagePreview: null,
+            imageInputModes: ['url', 'url'], // For first_frame and first_last_frame
+            imagePreviews: [null, null],
+            refImageInputModes: ['url'], // For reference images
+            refImagePreviews: [null],
             showSettings: false,
             apiKey: '',
             apiKeyConfigured: false,
@@ -36,16 +40,6 @@ createApp({
             clearInterval(this.polling);
         }
     },
-    watch: {
-        imageInputMode(newMode) {
-            // Clear image data when switching modes
-            this.newTask.image_url = '';
-            this.uploadedImagePreview = null;
-            if (this.$refs.imageUpload) {
-                this.$refs.imageUpload.value = '';
-            }
-        }
-    },
     methods: {
         async loadTasks() {
             try {
@@ -57,82 +51,40 @@ createApp({
             }
         },
 
-        async handleImageUpload(event) {
+        async handleImageUpload(event, index) {
             const file = event.target.files[0];
             if (!file) {
-                this.newTask.image_url = '';
-                this.uploadedImagePreview = null;
-                return;
-            }
-
-            // Validate file type
-            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'];
-            if (!validTypes.includes(file.type)) {
-                this.showError('不支持的圖片格式。請使用 JPEG, PNG, WebP, BMP, TIFF 或 GIF');
-                event.target.value = '';
-                return;
-            }
-
-            // Validate file size (max 30MB)
-            const maxSize = 30 * 1024 * 1024; // 30MB
-            if (file.size > maxSize) {
-                this.showError('圖片文件過大。最大支持 30MB');
-                event.target.value = '';
+                this.newTask.images[index] = null;
+                this.imagePreviews[index] = null;
                 return;
             }
 
             try {
-                // Read image to validate dimensions
-                const image = await this.loadImage(file);
-
-                const width = image.width;
-                const height = image.height;
-                const aspectRatio = width / height;
-                const shorterSide = Math.min(width, height);
-                const longerSide = Math.max(width, height);
-
-                // Validate aspect ratio (0.4 to 2.5)
-                if (aspectRatio < 0.4 || aspectRatio > 2.5) {
-                    this.showError(`圖片寬高比不符合要求（${aspectRatio.toFixed(2)}）。需要在 0.4 到 2.5 之間`);
-                    event.target.value = '';
-                    return;
-                }
-
-                // Validate dimensions
-                if (shorterSide <= 300) {
-                    this.showError(`圖片短邊過小（${shorterSide}px）。需要大於 300px`);
-                    event.target.value = '';
-                    return;
-                }
-
-                if (longerSide >= 6000) {
-                    this.showError(`圖片長邊過大（${longerSide}px）。需要小於 6000px`);
-                    event.target.value = '';
-                    return;
-                }
-
-                // Convert to Base64
                 const base64 = await this.fileToBase64(file);
-
-                // Set image URL in Base64 format
-                this.newTask.image_url = base64;
-                this.uploadedImagePreview = base64;
-
-                this.showSuccess('圖片上傳成功');
+                this.newTask.images[index] = base64;
+                this.imagePreviews[index] = base64;
             } catch (error) {
                 console.error('處理圖片失敗:', error);
-                this.showError('處理圖片失敗: ' + error.message);
-                event.target.value = '';
+                this.showError('處理圖片失敗');
             }
         },
 
-        loadImage(file) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = reject;
-                img.src = URL.createObjectURL(file);
-            });
+        async handleRefImageUpload(event, index) {
+            const file = event.target.files[0];
+            if (!file) {
+                this.newTask.referenceImages[index].url = null;
+                this.refImagePreviews[index] = null;
+                return;
+            }
+
+            try {
+                const base64 = await this.fileToBase64(file);
+                this.newTask.referenceImages[index].url = base64;
+                this.refImagePreviews[index] = base64;
+            } catch (error) {
+                console.error('處理圖片失敗:', error);
+                this.showError('處理圖片失敗');
+            }
         },
 
         fileToBase64(file) {
@@ -142,6 +94,22 @@ createApp({
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
+        },
+
+        addReferenceImage() {
+            if (this.newTask.referenceImages.length < 4) {
+                this.newTask.referenceImages.push({ url: null });
+                this.refImageInputModes.push('url');
+                this.refImagePreviews.push(null);
+            }
+        },
+
+        removeReferenceImage(index) {
+            if (this.newTask.referenceImages.length > 1) {
+                this.newTask.referenceImages.splice(index, 1);
+                this.refImageInputModes.splice(index, 1);
+                this.refImagePreviews.splice(index, 1);
+            }
         },
 
         buildParameterString() {
@@ -198,12 +166,33 @@ createApp({
 
                 // Prepare request data
                 const requestData = {
-                    prompt: fullPrompt
+                    prompt: fullPrompt,
+                    imageMode: this.newTask.imageMode
                 };
 
-                // Add image_url if provided
-                if (this.newTask.image_url && this.newTask.image_url.trim()) {
-                    requestData.image_url = this.newTask.image_url.trim();
+                // Add images based on mode
+                if (this.newTask.imageMode === 'first_frame') {
+                    if (this.newTask.images[0]) {
+                        requestData.images = [{ url: this.newTask.images[0], role: 'first_frame' }];
+                    }
+                } else if (this.newTask.imageMode === 'first_last_frame') {
+                    const images = [];
+                    if (this.newTask.images[0]) {
+                        images.push({ url: this.newTask.images[0], role: 'first_frame' });
+                    }
+                    if (this.newTask.images[1]) {
+                        images.push({ url: this.newTask.images[1], role: 'last_frame' });
+                    }
+                    if (images.length > 0) {
+                        requestData.images = images;
+                    }
+                } else if (this.newTask.imageMode === 'reference') {
+                    const images = this.newTask.referenceImages
+                        .filter(img => img.url)
+                        .map(img => ({ url: img.url, role: 'reference_image' }));
+                    if (images.length > 0) {
+                        requestData.images = images;
+                    }
                 }
 
                 // Send request
@@ -211,19 +200,18 @@ createApp({
 
                 // 清空表單
                 this.newTask.prompt = '';
-                this.newTask.image_url = '';
+                this.newTask.imageMode = 'none';
+                this.newTask.images = [null, null];
+                this.newTask.referenceImages = [{ url: null }];
                 this.newTask.ratio = '16:9';
                 this.newTask.duration = 5;
                 this.newTask.resolution = '720p';
                 this.newTask.seed = null;
                 this.newTask.camera_fixed = false;
-                this.uploadedImagePreview = null;
-                this.imageInputMode = 'url';
-
-                // Clear file input if exists
-                if (this.$refs.imageUpload) {
-                    this.$refs.imageUpload.value = '';
-                }
+                this.imageInputModes = ['url', 'url'];
+                this.imagePreviews = [null, null];
+                this.refImageInputModes = ['url'];
+                this.refImagePreviews = [null];
 
                 // 立即刷新任務列表
                 await this.loadTasks();

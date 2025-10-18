@@ -65,57 +65,124 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                參考圖片（可選）
+                                圖片使用模式（可選）
                             </label>
+                            <select v-model="newTask.imageMode"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3"
+                                    :disabled="!apiKeyConfigured">
+                                <option value="none">無圖片（純文本生成）</option>
+                                <option value="first_frame">首幀（1 張圖片）</option>
+                                <option value="first_last_frame">首尾幀（2 張圖片）</option>
+                                <option value="reference">參考圖片（1-4 張圖片）</option>
+                            </select>
 
-                            <!-- 切換按鈕 -->
-                            <div class="flex gap-2 mb-2">
-                                <button
-                                    type="button"
-                                    @click="imageInputMode = 'url'"
-                                    :class="imageInputMode === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
-                                    class="px-4 py-2 rounded-lg text-sm"
-                                    :disabled="!apiKeyConfigured">
-                                    圖片 URL
-                                </button>
-                                <button
-                                    type="button"
-                                    @click="imageInputMode = 'upload'"
-                                    :class="imageInputMode === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
-                                    class="px-4 py-2 rounded-lg text-sm"
-                                    :disabled="!apiKeyConfigured">
-                                    上傳圖片
-                                </button>
+                            <!-- 首幀模式 - 1張圖 -->
+                            <div v-if="newTask.imageMode === 'first_frame'" class="space-y-3">
+                                <div class="border border-gray-300 rounded-lg p-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">首幀圖片</label>
+                                    <div class="flex gap-2 mb-2">
+                                        <button type="button" @click="imageInputModes[0] = 'url'"
+                                                :class="imageInputModes[0] === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+                                                class="px-3 py-1 rounded text-sm" :disabled="!apiKeyConfigured">URL</button>
+                                        <button type="button" @click="imageInputModes[0] = 'upload'"
+                                                :class="imageInputModes[0] === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+                                                class="px-3 py-1 rounded text-sm" :disabled="!apiKeyConfigured">上傳</button>
+                                    </div>
+                                    <input v-if="imageInputModes[0] === 'url'" type="url" v-model="newTask.images[0]"
+                                           class="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                                           placeholder="https://example.com/image.jpg" :disabled="!apiKeyConfigured">
+                                    <div v-if="imageInputModes[0] === 'upload'">
+                                        <input type="file" @change="(e) => handleImageUpload(e, 0)" ref="imageUpload0"
+                                               accept="image/jpeg,image/png,image/webp,image/bmp,image/tiff,image/gif"
+                                               class="w-full border border-gray-300 rounded px-2 py-1 text-sm" :disabled="!apiKeyConfigured">
+                                        <img v-if="imagePreviews[0]" :src="imagePreviews[0]" class="mt-2 max-w-xs max-h-32 rounded border">
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- URL 輸入 -->
-                            <div v-if="imageInputMode === 'url'">
-                                <input
-                                    type="url"
-                                    v-model="newTask.image_url"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="https://example.com/image.jpg"
-                                    :disabled="!apiKeyConfigured"
-                                >
+                            <!-- 首尾幀模式 - 2張圖 -->
+                            <div v-if="newTask.imageMode === 'first_last_frame'" class="space-y-3">
+                                <!-- 首幀 -->
+                                <div class="border border-gray-300 rounded-lg p-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">首幀圖片</label>
+                                    <div class="flex gap-2 mb-2">
+                                        <button type="button" @click="imageInputModes[0] = 'url'"
+                                                :class="imageInputModes[0] === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+                                                class="px-3 py-1 rounded text-sm" :disabled="!apiKeyConfigured">URL</button>
+                                        <button type="button" @click="imageInputModes[0] = 'upload'"
+                                                :class="imageInputModes[0] === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+                                                class="px-3 py-1 rounded text-sm" :disabled="!apiKeyConfigured">上傳</button>
+                                    </div>
+                                    <input v-if="imageInputModes[0] === 'url'" type="url" v-model="newTask.images[0]"
+                                           class="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                                           placeholder="https://example.com/image.jpg" :disabled="!apiKeyConfigured">
+                                    <div v-if="imageInputModes[0] === 'upload'">
+                                        <input type="file" @change="(e) => handleImageUpload(e, 0)" ref="imageUpload0"
+                                               accept="image/jpeg,image/png,image/webp,image/bmp,image/tiff,image/gif"
+                                               class="w-full border border-gray-300 rounded px-2 py-1 text-sm" :disabled="!apiKeyConfigured">
+                                        <img v-if="imagePreviews[0]" :src="imagePreviews[0]" class="mt-2 max-w-xs max-h-32 rounded border">
+                                    </div>
+                                </div>
+                                <!-- 尾幀 -->
+                                <div class="border border-gray-300 rounded-lg p-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">尾幀圖片</label>
+                                    <div class="flex gap-2 mb-2">
+                                        <button type="button" @click="imageInputModes[1] = 'url'"
+                                                :class="imageInputModes[1] === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+                                                class="px-3 py-1 rounded text-sm" :disabled="!apiKeyConfigured">URL</button>
+                                        <button type="button" @click="imageInputModes[1] = 'upload'"
+                                                :class="imageInputModes[1] === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+                                                class="px-3 py-1 rounded text-sm" :disabled="!apiKeyConfigured">上傳</button>
+                                    </div>
+                                    <input v-if="imageInputModes[1] === 'url'" type="url" v-model="newTask.images[1]"
+                                           class="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                                           placeholder="https://example.com/image.jpg" :disabled="!apiKeyConfigured">
+                                    <div v-if="imageInputModes[1] === 'upload'">
+                                        <input type="file" @change="(e) => handleImageUpload(e, 1)" ref="imageUpload1"
+                                               accept="image/jpeg,image/png,image/webp,image/bmp,image/tiff,image/gif"
+                                               class="w-full border border-gray-300 rounded px-2 py-1 text-sm" :disabled="!apiKeyConfigured">
+                                        <img v-if="imagePreviews[1]" :src="imagePreviews[1]" class="mt-2 max-w-xs max-h-32 rounded border">
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- 文件上傳 -->
-                            <div v-if="imageInputMode === 'upload'">
-                                <input
-                                    type="file"
-                                    @change="handleImageUpload"
-                                    accept="image/jpeg,image/png,image/webp,image/bmp,image/tiff,image/gif"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    :disabled="!apiKeyConfigured"
-                                    ref="imageUpload"
-                                >
-                                <p v-if="uploadedImagePreview" class="mt-2">
-                                    <img :src="uploadedImagePreview" class="max-w-xs max-h-40 rounded border" alt="Preview">
+                            <!-- 參考圖片模式 - 1-4張圖 -->
+                            <div v-if="newTask.imageMode === 'reference'" class="space-y-3">
+                                <div v-for="(img, index) in newTask.referenceImages" :key="index" class="border border-gray-300 rounded-lg p-3">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="text-sm font-medium text-gray-700">參考圖片 {{ index + 1 }}</label>
+                                        <button v-if="newTask.referenceImages.length > 1" type="button"
+                                                @click="removeReferenceImage(index)"
+                                                class="text-red-600 hover:text-red-800 text-sm" :disabled="!apiKeyConfigured">移除</button>
+                                    </div>
+                                    <div class="flex gap-2 mb-2">
+                                        <button type="button" @click="refImageInputModes[index] = 'url'"
+                                                :class="refImageInputModes[index] === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+                                                class="px-3 py-1 rounded text-sm" :disabled="!apiKeyConfigured">URL</button>
+                                        <button type="button" @click="refImageInputModes[index] = 'upload'"
+                                                :class="refImageInputModes[index] === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'"
+                                                class="px-3 py-1 rounded text-sm" :disabled="!apiKeyConfigured">上傳</button>
+                                    </div>
+                                    <input v-if="refImageInputModes[index] === 'url'" type="url" v-model="img.url"
+                                           class="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                                           placeholder="https://example.com/image.jpg" :disabled="!apiKeyConfigured">
+                                    <div v-if="refImageInputModes[index] === 'upload'">
+                                        <input type="file" @change="(e) => handleRefImageUpload(e, index)" :ref="`refImageUpload${index}`"
+                                               accept="image/jpeg,image/png,image/webp,image/bmp,image/tiff,image/gif"
+                                               class="w-full border border-gray-300 rounded px-2 py-1 text-sm" :disabled="!apiKeyConfigured">
+                                        <img v-if="refImagePreviews[index]" :src="refImagePreviews[index]" class="mt-2 max-w-xs max-h-32 rounded border">
+                                    </div>
+                                </div>
+                                <button v-if="newTask.referenceImages.length < 4" type="button"
+                                        @click="addReferenceImage"
+                                        class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm"
+                                        :disabled="!apiKeyConfigured">+ 添加參考圖片</button>
+                                <p class="text-xs text-gray-500">
+                                    💡 建議在提示詞中使用 [Image 1]、[Image 2] 等格式明確引用圖片
                                 </p>
                             </div>
 
-                            <p class="text-xs text-gray-500 mt-1">
-                                提供圖片可以讓 AI 根據圖片內容生成視頻（Image-to-Video）<br>
+                            <p v-if="newTask.imageMode !== 'none'" class="text-xs text-gray-500 mt-2">
                                 支持格式: JPEG, PNG, WebP, BMP, TIFF, GIF | 最大 30MB | 短邊 > 300px, 長邊 < 6000px
                             </p>
                         </div>

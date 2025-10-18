@@ -81,14 +81,29 @@ class BytePlusAPIClient:
                 "text": prompt
             })
 
-            # 如果提供了圖片 URL，添加圖片內容（image-to-video）
-            if kwargs.get('image_url'):
-                content.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": kwargs['image_url']
+            # 如果提供了圖片數組，添加圖片內容（image-to-video）
+            # images: [{"url": "...", "role": "first_frame"/"last_frame"/"reference_image"}]
+            images = kwargs.get('images')
+            if images and isinstance(images, list):
+                for img in images:
+                    url = img.get('url')
+                    role = img.get('role')
+
+                    if not url:
+                        continue
+
+                    image_obj = {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": url
+                        }
                     }
-                })
+
+                    # Add role if specified (required for first_last_frame and reference modes)
+                    if role:
+                        image_obj["role"] = role
+
+                    content.append(image_obj)
 
             # 獲取模型/端點 ID（從配置文件讀取）
             model = kwargs.get("model") or get_model_id()
