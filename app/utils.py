@@ -131,9 +131,12 @@ def setup_logging(log_file='logs/app.log', log_level='INFO'):
         log_path = work_dir / log_file
         log_path.parent.mkdir(parents=True, exist_ok=True)
         handlers.append(logging.FileHandler(log_path, encoding='utf-8'))
+        print(f"Log file: {log_path}")
     except Exception as e:
         # 無法創建日誌文件，只輸出到控制台
         print(f"Warning: Cannot create log file: {e}")
+        print(f"Work directory: {work_dir}")
+        print(f"Log path attempted: {work_dir / log_file}")
 
     # 配置 logging
     logging.basicConfig(
@@ -159,11 +162,12 @@ def ensure_directories():
         # 開發環境：當前目錄
         work_dir = Path.cwd()
 
-    # 打包後只需要創建數據和日誌目錄（static/templates 已打包在 exe 中）
+    # 打包後需要創建數據、日誌和視頻目錄
     if getattr(sys, 'frozen', False):
         directories = [
             'data',
             'logs',
+            'videos',  # 視頻存放目錄
         ]
     else:
         directories = [

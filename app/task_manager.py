@@ -177,20 +177,35 @@ class TaskManager:
             task_id: 任務 ID
             video_url: 視頻 URL
         """
-        try:
-            local_path = f"static/videos/{task_id}.mp4"
+        import sys
+        from pathlib import Path
 
-            logging.info(f"開始下載視頻: {task_id}")
+        try:
+            # 獲取正確的工作目錄
+            if getattr(sys, 'frozen', False):
+                # 打包後：exe 同目錄
+                work_dir = Path(sys.executable).parent
+            else:
+                # 開發環境：當前目錄
+                work_dir = Path.cwd()
+
+            # 確保視頻目錄存在
+            video_dir = work_dir / 'videos'
+            video_dir.mkdir(exist_ok=True)
+
+            local_path = video_dir / f"{task_id}.mp4"
+
+            logging.info(f"開始下載視頻: {task_id} -> {local_path}")
             downloaded_path = self.api_client.download_video(
                 video_url,
-                local_path
+                str(local_path)
             )
 
             if downloaded_path:
                 # 下載成功後更新數據庫（在新線程中需要查詢任務）
                 task = self.db_session.query(Task).filter_by(task_id=task_id).first()
                 if task:
-                    task.local_video_path = downloaded_path
+                    task.local_video_path = str(local_path)
                     self.db_session.commit()
                     logging.info(f"視頻下載成功: {task_id} -> {downloaded_path}")
             else:
